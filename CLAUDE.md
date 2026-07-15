@@ -31,9 +31,11 @@ See `docs/architecture.md` section 3. No `user_id` columns anywhere — this is 
 ## Decision log
 (Update this as choices get made, so future sessions don't re-litigate them.)
 - SQLite access library: **better-sqlite3** (decided 2026-07-15, spec 01). Rationale: synchronous API keeps the get-or-create logic simple and easy to unit-test, no ORM codegen/migration tooling to carry, and a `:memory:` database makes tests fast and isolated. It was already one of the two sanctioned options, so this introduces no new/unflagged dependency. Revisit if/when the schema grows complex enough to want Prisma's migrations and typed client.
-- Wearable data source for v1: _not yet decided (manual CSV planned)_
+- Wearable data source for v1: **manual CSV import** (spec 03). Parsed with **PapaParse** (approved new dependency — robust quoted-field/delimiter handling). Data lands in `wearable_metrics`, one row per day per `source`, upserted on `UNIQUE(daily_log_id, source)` so re-imports update in place and a later live-sync spec can add `source='fitbit'` next to `source='csv'`. Fixed known headers (date required; steps/calories_active/calories_resting/sleep_minutes/resting_hr/sleep_stages optional); unknown columns ignored, bad rows reported and skipped.
 - Symptom tracking (spec 02, 2026-07-15): symptoms are add/edit/delete-able entries linked to a `conditions` row and the day's `daily_log`; `severity` is an INTEGER 1-10 enforced by a DB CHECK. SQLite foreign keys are enabled per-connection (`PRAGMA foreign_keys = ON`). Starter conditions: Migraine, Rheumatoid Arthritis, Crohn's Disease (seeded idempotently). Per-condition custom fields live in `conditions.tracked_fields` as JSON (not hardcoded per condition).
 
+
+- Training plans (spec 04, 2026-07-15): templates are **code-defined** in `lib/plan-templates.ts`; starting a plan copies them into `training_plans` + `training_plan_sessions` rows. `scheduled_date = start_date + dayOffset` (pure `addDays` helper in `lib/date.ts`). Sessions track `completed` + `actual_metrics` (duration/distance/rpe/notes, validated in `/lib`). `generated_by`/`template_key` are kept so a later adaptive-plan spec can tell template plans from AI/manual ones. Plan sessions are their own `scheduled_date` timeline, not tied to `daily_logs`.
 
 ## Working style
 - Ambiguity in a spec is a reason to ask before implementing, not a reason to guess silently — flag it and propose a default.

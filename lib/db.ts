@@ -31,6 +31,47 @@ CREATE TABLE IF NOT EXISTS symptom_entries (
 
 CREATE INDEX IF NOT EXISTS idx_symptom_entries_daily_log
   ON symptom_entries (daily_log_id);
+
+CREATE TABLE IF NOT EXISTS wearable_metrics (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  daily_log_id    INTEGER NOT NULL REFERENCES daily_logs(id) ON DELETE CASCADE,
+  source          TEXT NOT NULL DEFAULT 'csv', -- csv / fitbit / apple / manual ...
+  steps           INTEGER,
+  calories_active INTEGER,
+  calories_resting INTEGER,
+  sleep_minutes   INTEGER,
+  resting_hr      INTEGER,
+  sleep_stages    TEXT,                         -- JSON, optional
+  synced_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (daily_log_id, source)                 -- upsert target: one row per day per source
+);
+
+CREATE INDEX IF NOT EXISTS idx_wearable_metrics_daily_log
+  ON wearable_metrics (daily_log_id);
+
+CREATE TABLE IF NOT EXISTS training_plans (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  name         TEXT NOT NULL,
+  goal         TEXT,
+  start_date   TEXT NOT NULL,
+  generated_by TEXT NOT NULL DEFAULT 'template', -- template / ai / manual
+  template_key TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS training_plan_sessions (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  training_plan_id INTEGER NOT NULL REFERENCES training_plans(id) ON DELETE CASCADE,
+  scheduled_date  TEXT NOT NULL,
+  workout_type    TEXT NOT NULL,
+  target_metrics  TEXT,               -- JSON
+  completed       INTEGER NOT NULL DEFAULT 0 CHECK (completed IN (0,1)),
+  actual_metrics  TEXT,               -- JSON, set when completed
+  completed_at    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_plan_sessions_plan
+  ON training_plan_sessions (training_plan_id);
 `;
 
 /** Apply schema migrations + connection pragmas. Idempotent. */
