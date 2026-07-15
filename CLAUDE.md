@@ -37,6 +37,8 @@ See `docs/architecture.md` section 3. No `user_id` columns anywhere — this is 
 
 - Training plans (spec 04, 2026-07-15): templates are **code-defined** in `lib/plan-templates.ts`; starting a plan copies them into `training_plans` + `training_plan_sessions` rows. `scheduled_date = start_date + dayOffset` (pure `addDays` helper in `lib/date.ts`). Sessions track `completed` + `actual_metrics` (duration/distance/rpe/notes, validated in `/lib`). `generated_by`/`template_key` are kept so a later adaptive-plan spec can tell template plans from AI/manual ones. Plan sessions are their own `scheduled_date` timeline, not tied to `daily_logs`.
 
+- Trend dashboard (spec 05, 2026-07-15): read-only analytics at `/trends`. All aggregation + stats live in `lib/trends.ts` (pure, DB-injected, unit-tested); the API route and page stay thin. Charting uses **Recharts** (approved new dependency) in a `"use client"` component with a mount guard for SSR. Symptom severity is aggregated per day as both average and max; correlation is single-day, single-metric **Pearson r** with a zero-variance guard and a small-sample caveat (`MIN_SAMPLE = 7`) — always presented as association, not causation. Wearable series is filtered by `source`; severity optionally by condition.
+
 ## Working style
 - Ambiguity in a spec is a reason to ask before implementing, not a reason to guess silently — flag it and propose a default.
 - Prefer small, verifiable steps over large speculative builds.

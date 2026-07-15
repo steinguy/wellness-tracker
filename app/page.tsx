@@ -27,8 +27,9 @@ export default function Home() {
       <p className="mt-1 text-sm text-gray-500">
         {today} &middot; daily log #{log.id}
       </p>
-      <p className="mt-2">
+      <p className="mt-2 flex gap-4">
         <Link href="/plans" className="text-sm text-blue-600 hover:underline">Training plans &rarr;</Link>
+        <Link href="/trends" className="text-sm text-blue-600 hover:underline">Trends &rarr;</Link>
       </p>
 
       <SymptomTracker today={today} conditions={conditions} initialEntries={entries} />
