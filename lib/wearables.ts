@@ -21,8 +21,86 @@ export interface WearableMetric {
   calories_resting: number | null;
   sleep_minutes: number | null;
   resting_hr: number | null;
+  stress_avg: number | null;
+  stress_max: number | null;
+  body_battery_high: number | null;
+  body_battery_low: number | null;
   sleep_stages: string | null;
   synced_at: string;
+}
+
+/** Partial metric fields for a merge-upsert (e.g. one Garmin push carries a subset). */
+export interface WearablePartial {
+  steps?: number | null;
+  calories_active?: number | null;
+  calories_resting?: number | null;
+  sleep_minutes?: number | null;
+  resting_hr?: number | null;
+  stress_avg?: number | null;
+  stress_max?: number | null;
+  body_battery_high?: number | null;
+  body_battery_low?: number | null;
+  sleep_stages?: string | null;
+}
+
+const WM_MERGE_FIELDS = [
+  "steps",
+  "calories_active",
+  "calories_resting",
+  "sleep_minutes",
+  "resting_hr",
+  "stress_avg",
+  "stress_max",
+  "body_battery_high",
+  "body_battery_low",
+  "sleep_stages",
+] as const;
+
+/**
+ * Upsert a partial metric set for (date, source), MERGING with any existing row so
+ * successive pushes (e.g. Garmin dailies, then stress, then sleep) accumulate rather
+ * than overwrite. Only fields present in `fields` change; others are preserved.
+ * Idempotent: re-sending the same payload keeps the row unchanged.
+ */
+export function mergeUpsertWearableMetrics(
+  db: DB,
+  source: string,
+  date: string,
+  fields: WearablePartial
+): "imported" | "updated" {
+  if (!isValidDate(date)) throw new Error(`Invalid date: "${date}". Expected YYYY-MM-DD.`);
+  const log = getOrCreateDailyLog(db, date);
+  const existing = db
+    .prepare("SELECT * FROM wearable_metrics WHERE daily_log_id = ? AND source = ?")
+    .get(log.id, source) as Record<string, unknown> | undefined;
+
+  const merged: Record<string, unknown> = { daily_log_id: log.id, source };
+  for (const f of WM_MERGE_FIELDS) {
+    const incoming = fields[f as keyof WearablePartial];
+    merged[f] = incoming !== undefined ? incoming : existing ? existing[f] ?? null : null;
+  }
+
+  db.prepare(
+    `INSERT INTO wearable_metrics
+       (daily_log_id, source, steps, calories_active, calories_resting, sleep_minutes, resting_hr,
+        stress_avg, stress_max, body_battery_high, body_battery_low, sleep_stages, synced_at)
+     VALUES (@daily_log_id, @source, @steps, @calories_active, @calories_resting, @sleep_minutes, @resting_hr,
+             @stress_avg, @stress_max, @body_battery_high, @body_battery_low, @sleep_stages, datetime('now'))
+     ON CONFLICT(daily_log_id, source) DO UPDATE SET
+       steps             = excluded.steps,
+       calories_active   = excluded.calories_active,
+       calories_resting  = excluded.calories_resting,
+       sleep_minutes     = excluded.sleep_minutes,
+       resting_hr        = excluded.resting_hr,
+       stress_avg        = excluded.stress_avg,
+       stress_max        = excluded.stress_max,
+       body_battery_high = excluded.body_battery_high,
+       body_battery_low  = excluded.body_battery_low,
+       sleep_stages      = excluded.sleep_stages,
+       synced_at         = datetime('now')`
+  ).run(merged);
+
+  return existing ? "updated" : "imported";
 }
 
 export interface ParsedWearableRow {

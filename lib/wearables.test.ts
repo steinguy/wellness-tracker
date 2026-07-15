@@ -4,6 +4,7 @@ import {
   parseWearableCsv,
   importWearableCsv,
   getWearableMetricsByDate,
+  mergeUpsertWearableMetrics,
 } from "./wearables";
 
 const VALID_CSV = `date,steps,calories_active,calories_resting,sleep_minutes,resting_hr,device_note
@@ -104,5 +105,51 @@ describe("importWearableCsv", () => {
     expect(summary.imported).toBe(1);
     expect(summary.skipped).toBe(1);
     expect(summary.errors).toHaveLength(1);
+  });
+});
+
+describe("mergeUpsertWearableMetrics (Garmin multi-push)", () => {
+  let db: DB;
+  beforeEach(() => {
+    db = createDb(":memory:");
+  });
+
+  it("accumulates fields across successive pushes into one row", () => {
+    // dailies push
+    expect(mergeUpsertWearableMetrics(db, "garmin", "2026-07-14", { steps: 9000, stress_avg: 30 })).toBe("imported");
+    // stress push (body battery) for same day
+    expect(mergeUpsertWearableMetrics(db, "garmin", "2026-07-14", { body_battery_low: 20, body_battery_high: 80 })).toBe("updated");
+    // sleep push
+    expect(mergeUpsertWearableMetrics(db, "garmin", "2026-07-14", { sleep_minutes: 440 })).toBe("updated");
+
+    const rows = getWearableMetricsByDate(db, "2026-07-14").filter((r) => r.source === "garmin");
+    expect(rows).toHaveLength(1);
+    const r = rows[0];
+    expect(r.steps).toBe(9000);
+    expect(r.stress_avg).toBe(30);
+    expect(r.body_battery_low).toBe(20);
+    expect(r.body_battery_high).toBe(80);
+    expect(r.sleep_minutes).toBe(440);
+    expect(metricCount(db)).toBe(1);
+    expect(dailyLogCount(db)).toBe(1);
+  });
+
+  it("is idempotent and preserves prior fields on duplicate pushes", () => {
+    mergeUpsertWearableMetrics(db, "garmin", "2026-07-14", { steps: 9000 });
+    mergeUpsertWearableMetrics(db, "garmin", "2026-07-14", { stress_avg: 30 });
+    // Garmin re-sends the dailies push (steps only) — must not wipe stress_avg
+    mergeUpsertWearableMetrics(db, "garmin", "2026-07-14", { steps: 9000 });
+    const r = getWearableMetricsByDate(db, "2026-07-14").find((x) => x.source === "garmin")!;
+    expect(r.steps).toBe(9000);
+    expect(r.stress_avg).toBe(30);
+    expect(metricCount(db)).toBe(1);
+  });
+
+  it("keeps csv and garmin sources side by side for the same day", () => {
+    importWearableCsv(db, "date,steps\n2026-07-14,5000\n", "csv");
+    mergeUpsertWearableMetrics(db, "garmin", "2026-07-14", { steps: 9000 });
+    const rows = getWearableMetricsByDate(db, "2026-07-14");
+    expect(rows).toHaveLength(2);
+    expect(dailyLogCount(db)).toBe(1);
   });
 });

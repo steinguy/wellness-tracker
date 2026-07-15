@@ -1,7 +1,12 @@
 import type { DB } from "./db";
 
 export type SeverityKey = "severity_avg" | "severity_max";
-export type MetricKey = "steps" | "sleep_minutes" | "resting_hr";
+export type MetricKey =
+  | "steps"
+  | "sleep_minutes"
+  | "resting_hr"
+  | "stress_avg"
+  | "body_battery_low";
 
 export interface DailyPoint {
   date: string;
@@ -10,6 +15,8 @@ export interface DailyPoint {
   steps: number | null;
   sleep_minutes: number | null;
   resting_hr: number | null;
+  stress_avg: number | null;
+  body_battery_low: number | null;
 }
 
 export interface SeriesQuery {
@@ -19,7 +26,13 @@ export interface SeriesQuery {
   source?: string;
 }
 
-export const METRIC_KEYS: MetricKey[] = ["steps", "sleep_minutes", "resting_hr"];
+export const METRIC_KEYS: MetricKey[] = [
+  "steps",
+  "sleep_minutes",
+  "resting_hr",
+  "stress_avg",
+  "body_battery_low",
+];
 
 /**
  * Build one row per date (present in the range) with per-day symptom severity
@@ -37,6 +50,8 @@ export function getDailySeries(db: DB, q: SeriesQuery): DailyPoint[] {
         steps: null,
         sleep_minutes: null,
         resting_hr: null,
+        stress_avg: null,
+        body_battery_low: null,
       };
       byDate.set(date, row);
     }
@@ -69,7 +84,7 @@ export function getDailySeries(db: DB, q: SeriesQuery): DailyPoint[] {
   const source = q.source ?? "csv";
   const wmRows = db
     .prepare(
-      `SELECT dl.date AS date, wm.steps, wm.sleep_minutes, wm.resting_hr
+      `SELECT dl.date AS date, wm.steps, wm.sleep_minutes, wm.resting_hr, wm.stress_avg, wm.body_battery_low
          FROM wearable_metrics wm
          JOIN daily_logs dl ON dl.id = wm.daily_log_id
         WHERE dl.date BETWEEN ? AND ? AND wm.source = ?`
@@ -79,12 +94,16 @@ export function getDailySeries(db: DB, q: SeriesQuery): DailyPoint[] {
     steps: number | null;
     sleep_minutes: number | null;
     resting_hr: number | null;
+    stress_avg: number | null;
+    body_battery_low: number | null;
   }>;
   for (const r of wmRows) {
     const row = ensure(r.date);
     row.steps = r.steps;
     row.sleep_minutes = r.sleep_minutes;
     row.resting_hr = r.resting_hr;
+    row.stress_avg = r.stress_avg;
+    row.body_battery_low = r.body_battery_low;
   }
 
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));

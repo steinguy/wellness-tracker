@@ -41,6 +41,10 @@ CREATE TABLE IF NOT EXISTS wearable_metrics (
   calories_resting INTEGER,
   sleep_minutes   INTEGER,
   resting_hr      INTEGER,
+  stress_avg      INTEGER,
+  stress_max      INTEGER,
+  body_battery_high INTEGER,
+  body_battery_low  INTEGER,
   sleep_stages    TEXT,                         -- JSON, optional
   synced_at       TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (daily_log_id, source)                 -- upsert target: one row per day per source
@@ -75,11 +79,28 @@ CREATE INDEX IF NOT EXISTS idx_plan_sessions_plan
 `;
 
 /** Apply schema migrations + connection pragmas. Idempotent. */
+function addColumnIfMissing(db: DB, table: string, column: string, type: string): void {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
+}
+
 export function migrate(db: DB): void {
   // Foreign keys are OFF by default in SQLite and must be enabled per connection.
   db.pragma("foreign_keys = ON");
   db.pragma("journal_mode = WAL");
   db.exec(SCHEMA);
+
+  // Spec 06: columns added to wearable_metrics after it may already exist.
+  for (const [col, type] of [
+    ["stress_avg", "INTEGER"],
+    ["stress_max", "INTEGER"],
+    ["body_battery_high", "INTEGER"],
+    ["body_battery_low", "INTEGER"],
+  ] as const) {
+    addColumnIfMissing(db, "wearable_metrics", col, type);
+  }
 }
 
 /**

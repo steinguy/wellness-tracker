@@ -1,0 +1,9 @@
+{
+  "stressDetails": [
+    {
+      "summaryId": "EXAMPLE-stress-1",
+      "calendarDate": "2026-07-14",
+      "timeOffsetBodyBatteryValues": { "0": 42, "900": 55, "1800": 61, "2700": 38 }
+    }
+  ]
+}

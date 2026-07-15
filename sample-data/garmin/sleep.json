@@ -1,0 +1,13 @@
+{
+  "sleeps": [
+    {
+      "summaryId": "EXAMPLE-sleep-1",
+      "calendarDate": "2026-07-14",
+      "durationInSeconds": 26400,
+      "deepSleepDurationInSeconds": 6000,
+      "lightSleepDurationInSeconds": 15000,
+      "remSleepInSeconds": 4200,
+      "awakeDurationInSeconds": 1200
+    }
+  ]
+}

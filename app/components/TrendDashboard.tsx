@@ -20,6 +20,8 @@ interface DailyPoint {
   steps: number | null;
   sleep_minutes: number | null;
   resting_hr: number | null;
+  stress_avg: number | null;
+  body_battery_low: number | null;
 }
 interface TrendsResponse {
   start: string;
@@ -34,6 +36,8 @@ const METRIC_LABELS: Record<MetricKey, string> = {
   steps: "Steps",
   sleep_minutes: "Sleep (min)",
   resting_hr: "Resting HR",
+  stress_avg: "Stress (avg)",
+  body_battery_low: "Body Battery (low)",
 };
 
 export default function TrendDashboard({

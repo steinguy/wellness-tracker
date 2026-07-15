@@ -49,7 +49,8 @@ export default function Home() {
               <li key={m.id} className="rounded border border-gray-200 bg-white p-2">
                 <span className="font-medium">{m.source}</span>:{" "}
                 {m.steps ?? "—"} steps · {m.sleep_minutes ?? "—"} min sleep ·{" "}
-                resting HR {m.resting_hr ?? "—"} ·{" "}
+                resting HR {m.resting_hr ?? "—"} · stress {m.stress_avg ?? "—"} ·{" "}
+                Body Battery {m.body_battery_low ?? "—"}–{m.body_battery_high ?? "—"} ·{" "}
                 {(m.calories_active ?? 0) + (m.calories_resting ?? 0) || "—"} kcal
               </li>
             ))}

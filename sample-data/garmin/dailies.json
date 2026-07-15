@@ -1,0 +1,14 @@
+{
+  "dailies": [
+    {
+      "summaryId": "EXAMPLE-dailies-1",
+      "calendarDate": "2026-07-14",
+      "steps": 9210,
+      "activeKilocalories": 512,
+      "bmrKilocalories": 1680,
+      "restingHeartRateInBeatsPerMinute": 56,
+      "averageStressLevel": 34,
+      "maxStressLevel": 88
+    }
+  ]
+}

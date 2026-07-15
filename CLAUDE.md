@@ -39,6 +39,8 @@ See `docs/architecture.md` section 3. No `user_id` columns anywhere — this is 
 
 - Trend dashboard (spec 05, 2026-07-15): read-only analytics at `/trends`. All aggregation + stats live in `lib/trends.ts` (pure, DB-injected, unit-tested); the API route and page stay thin. Charting uses **Recharts** (approved new dependency) in a `"use client"` component with a mount guard for SSR. Symptom severity is aggregated per day as both average and max; correlation is single-day, single-metric **Pearson r** with a zero-variance guard and a small-sample caveat (`MIN_SAMPLE = 7`) — always presented as association, not causation. Wearable series is filtered by `source`; severity optionally by condition.
 
+- Garmin sync (spec 06): **PARKED as a future feature** (2026-07-15). Garmin's Health API needs developer-program approval + a public HTTPS webhook host, so live sync isn't wired up. The Garmin-specific code was removed; kept the source-agnostic reusable bits: `mergeUpsertWearableMetrics` (merge-preserve upsert for partial, multi-push metric updates), the `stress_*` / `body_battery_*` columns on `wearable_metrics`, and their overlays in Trends. These have no populating source yet. If revived, re-add an ingestor that calls `mergeUpsertWearableMetrics(source, date, partialFields)`. Spec kept at `06-garmin-sync.md`.
+
 ## Working style
 - Ambiguity in a spec is a reason to ask before implementing, not a reason to guess silently — flag it and propose a default.
 - Prefer small, verifiable steps over large speculative builds.
