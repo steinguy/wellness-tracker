@@ -30,7 +30,7 @@ See `docs/architecture.md` section 3. No `user_id` columns anywhere — this is 
 
 ## Decision log
 (Update this as choices get made, so future sessions don't re-litigate them.)
-- SQLite access library: _not yet decided_
+- SQLite access library: **better-sqlite3** (decided 2026-07-15, spec 01). Rationale: synchronous API keeps the get-or-create logic simple and easy to unit-test, no ORM codegen/migration tooling to carry, and a `:memory:` database makes tests fast and isolated. It was already one of the two sanctioned options, so this introduces no new/unflagged dependency. Revisit if/when the schema grows complex enough to want Prisma's migrations and typed client.
 - Wearable data source for v1: _not yet decided (manual CSV planned)_
 
 ## Working style

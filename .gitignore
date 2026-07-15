@@ -1,31 +1,35 @@
-# Dependencies
-node_modules/
+# dependencies
+/node_modules
 
-# Next.js
-.next/
-out/
+# next.js
+/.next/
+/out/
+/build
 
-# Environment
-.env
-.env.local
+# local SQLite database
+/data/*.db
+/data/*.db-wal
+/data/*.db-shm
+
+# testing / coverage
+/coverage
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files
 .env*.local
 
-# Database — personal health data lives here, never commit it
-*.db
-*.db-journal
-*.sqlite
-*.sqlite3
+# typescript
+*.tsbuildinfo
+next-env.d.ts
 
-# Logs
-npm-debug.log*
-*.log
-
-# OS
+# os / editor cruft
 .DS_Store
+*.pem
 
-# Editor
-.vscode/
-.idea/
-
-# Test coverage
-coverage/
+# Windows "downloaded from the internet" tags (accidentally committed earlier)
+*:Zone.Identifier
