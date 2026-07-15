@@ -32,6 +32,8 @@ See `docs/architecture.md` section 3. No `user_id` columns anywhere — this is 
 (Update this as choices get made, so future sessions don't re-litigate them.)
 - SQLite access library: **better-sqlite3** (decided 2026-07-15, spec 01). Rationale: synchronous API keeps the get-or-create logic simple and easy to unit-test, no ORM codegen/migration tooling to carry, and a `:memory:` database makes tests fast and isolated. It was already one of the two sanctioned options, so this introduces no new/unflagged dependency. Revisit if/when the schema grows complex enough to want Prisma's migrations and typed client.
 - Wearable data source for v1: _not yet decided (manual CSV planned)_
+- Symptom tracking (spec 02, 2026-07-15): symptoms are add/edit/delete-able entries linked to a `conditions` row and the day's `daily_log`; `severity` is an INTEGER 1-10 enforced by a DB CHECK. SQLite foreign keys are enabled per-connection (`PRAGMA foreign_keys = ON`). Starter conditions: Migraine, Rheumatoid Arthritis, Crohn's Disease (seeded idempotently). Per-condition custom fields live in `conditions.tracked_fields` as JSON (not hardcoded per condition).
+
 
 ## Working style
 - Ambiguity in a spec is a reason to ask before implementing, not a reason to guess silently — flag it and propose a default.
